@@ -40,6 +40,92 @@ def process_input(user_input):
                 add_fact(fact)
                 print("Pattern matched and fact added.")
                 return
+        elif phrase == "is a mother of":
+            match = re.match(r"(\w+)\s+is\s+a\s+mother\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "is a grandmother of":
+            match = re.match(r"(\w+)\s+is\s+a\s+grandmother\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "is a child of":
+            match = re.match(r"(\w+)\s+is\s+a\s+child\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "is a daughter of":
+            match = re.match(r"(\w+)\s+is\s+a\s+daughter\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "is a uncle of":
+            match = re.match(r"(\w+)\s+is\s+a\s+uncle\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "is a brother of":
+            match = re.match(r"(\w+)\s+is\s+a\s+brother\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "is a father of":
+            match = re.match(r"(\w+)\s+is\s+a\s+father\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "and are the parents of":
+            match = re.match(r"(\w+)\s+and\s+(\w+)\s+are\s+the\s+parents\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2, child = match.groups()
+                facts = [template[0].format(person1, child), template[1].format(person2, child)]
+                for fact in facts:
+                    add_fact(fact)
+                return
+        elif phrase == "is a grandfather of":
+            match = re.match(r"(\w+)\s+is\s+a\s+grandfather\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "and are the children of":
+            match = re.match(r"(\w+)\s+and\s+(\w+)\s+and\s+(\w+)\s+are\s+the\s+children\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2, person3, parent = match.groups()
+                facts = [template[0].format(person1, parent), template[1].format(person2, parent), template[2].format(person3, parent)]
+                for fact in facts:
+                    add_fact(fact)
+                return
+        elif phrase == "is a son of":
+            match = re.match(r"(\w+)\s+is\s+a\s+son\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
+        elif phrase == "is an aunt of":
+            match = re.match(r"(\w+)\s+is\s+an\s+aunt\s+of\s+(\w+)\.", user_input)
+            if match:
+                person1, person2 = match.groups()
+                fact = template.format(person1, person2)
+                add_fact(fact)
+                return
     print("Unknown statement.")
 
 
