@@ -20,8 +20,6 @@ statement_patterns = {
 
 import re
 
-import re
-
 def process_input(user_input):
     for phrase, template in statement_patterns.items():
         # Build regex pattern dynamically based on known phrase
@@ -132,11 +130,43 @@ def process_input(user_input):
 
 prolog.consult("FamilyRule.pl")
 
-def add_fact(fact):
+def is_consistent(fact):
     try:
-        prolog.assertz(fact)
-        print("OK! I learned something.")
-    except:
+        # Parse the predicate and arguments from the fact string
+        predicate = fact.split('(')[0]
+        args = fact.split('(')[1].rstrip(')').split(', ')
+        X = args[0]
+        Y = args[1]
+
+        # Prevent circular parent-child relationships
+        if predicate == "child":
+            result = list(prolog.query(f"child({Y}, {X})"))
+            if result:
+                return False
+        elif predicate == "parent":
+            result = list(prolog.query(f"parent({Y}, {X})"))
+            if result:
+                return False
+        elif predicate == "father" or predicate == "mother":
+            result = list(prolog.query(f"child({Y}, {X})"))
+            if result:
+                return False
+        # You can add more checks for contradictions, like mutual sibling relationships or invalid genders
+
+        return True
+    except Exception as e:
+        print(f"Consistency check failed: {e}")
+        return True  # Default to allowing the fact if the check can't be performed
+
+
+def add_fact(fact):
+    if is_consistent(fact):
+        try:
+            prolog.assertz(fact)
+            print("OK! I learned something.")
+        except:
+            print("That's impossible!")
+    else:
         print("That's impossible!")
 
 def answer_question(query):
