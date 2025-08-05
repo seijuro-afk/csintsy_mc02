@@ -356,6 +356,197 @@ def answer_who_question(query, pattern, person):
     except Exception as e:
         print(f"Query failed: {e}")
 
+def is_consistent(fact):
+    try:
+        # Parse the predicate and arguments from the fact string
+        predicate = fact.split('(')[0]
+        args = fact.split('(')[1].rstrip(')').split(', ')
+        X = args[0]
+        Y = args[1] if len(args) > 1 else None
+
+        # Prevent circular parent-child relationships
+        if predicate == "child":
+            result = list(prolog.query(f"child({Y}, {X})"))
+            if result:
+                return False
+        elif predicate == "parent":
+            result = list(prolog.query(f"parent({Y}, {X})"))
+            if result:
+                return False
+        elif predicate in ["father_base", "mother_base"]:
+            result = list(prolog.query(f"child({Y}, {X})"))
+            if result:
+                return False
+
+        # COMPREHENSIVE GENDER CONSISTENCY CHECKS
+        
+        # MALE predicates - X should be male
+        if predicate in ["father_base", "son", "brother_base", "grandfather", "uncle"]:
+            # Check if X is already known to be female
+            female_checks = [
+                f"mother({X}, _)",
+                f"daughter({X}, _)", 
+                f"sister({X}, _)",
+                f"grandmother({X}, _)",
+                f"aunt({X}, _)"
+            ]
+            for check in female_checks:
+                if list(prolog.query(check)):
+                    return False
+                    
+        # FEMALE predicates - X should be female
+        elif predicate in ["mother_base", "daughter", "sister_base", "grandmother", "aunt"]:
+            # Check if X is already known to be male
+            male_checks = [
+                f"father({X}, _)",
+                f"son({X}, _)",
+                f"brother({X}, _)", 
+                f"grandfather({X}, _)",
+                f"uncle({X}, _)"
+            ]
+            for check in male_checks:
+                if list(prolog.query(check)):
+                    return False
+
+        # SPECIFIC PREDICATE CONTRADICTION CHECKS
+        
+        if predicate == "father_base":
+            # Father cannot be any female role
+            contradictions = [
+                f"daughter({X}, _)",
+                f"sister({X}, _)",
+                f"mother({X}, _)",
+                f"grandmother({X}, _)",
+                f"aunt({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+                    
+        elif predicate == "mother_base":
+            # Mother cannot be any male role
+            contradictions = [
+                f"son({X}, _)",
+                f"brother({X}, _)",
+                f"father({X}, _)",
+                f"grandfather({X}, _)",
+                f"uncle({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+                    
+        elif predicate == "daughter":
+            # Daughter cannot be any male role
+            contradictions = [
+                f"father({X}, _)",
+                f"son({X}, _)",
+                f"brother({X}, _)",
+                f"grandfather({X}, _)",
+                f"uncle({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+                    
+        elif predicate == "son":
+            # Son cannot be any female role
+            contradictions = [
+                f"mother({X}, _)",
+                f"daughter({X}, _)",
+                f"sister({X}, _)",
+                f"grandmother({X}, _)",
+                f"aunt({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+
+        elif predicate == "brother_base":
+            # Brother cannot be any female role
+            contradictions = [
+                f"mother({X}, _)",
+                f"daughter({X}, _)",
+                f"sister({X}, _)",
+                f"grandmother({X}, _)",
+                f"aunt({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+
+        elif predicate == "sister_base":
+            # Sister cannot be any male role
+            contradictions = [
+                f"father({X}, _)",
+                f"son({X}, _)",
+                f"brother({X}, _)",
+                f"grandfather({X}, _)",
+                f"uncle({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+
+        elif predicate == "grandfather":
+            # Grandfather cannot be any female role
+            contradictions = [
+                f"mother({X}, _)",
+                f"daughter({X}, _)",
+                f"sister({X}, _)",
+                f"grandmother({X}, _)",
+                f"aunt({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+
+        elif predicate == "grandmother":
+            # Grandmother cannot be any male role
+            contradictions = [
+                f"father({X}, _)",
+                f"son({X}, _)",
+                f"brother({X}, _)",
+                f"grandfather({X}, _)",
+                f"uncle({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+
+        elif predicate == "uncle":
+            # Uncle cannot be any female role
+            contradictions = [
+                f"mother({X}, _)",
+                f"daughter({X}, _)",
+                f"sister({X}, _)",
+                f"grandmother({X}, _)",
+                f"aunt({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+
+        elif predicate == "aunt":
+            # Aunt cannot be any male role
+            contradictions = [
+                f"father({X}, _)",
+                f"son({X}, _)",
+                f"brother({X}, _)",
+                f"grandfather({X}, _)",
+                f"uncle({X}, _)"
+            ]
+            for contradiction in contradictions:
+                if list(prolog.query(contradiction)):
+                    return False
+
+        return True
+    except Exception as e:
+        print(f"Consistency check failed: {e}")
+        return True
+
+# ...rest of your code stays the same...
+
 while True:
     user_input = input("").strip()
 
