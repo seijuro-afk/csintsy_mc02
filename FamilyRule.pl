@@ -1,3 +1,6 @@
+/* The purpose of PROLOG is merely to serve as an inference engine
+for the intelligence of the bot. */
+
 % FamilyRule.pl - Family Relationship Rules
 % Logical rules and dynamic declarations for family relationships
 
@@ -25,10 +28,15 @@ female(X) :- sister(X, _).
 female(X) :- grandmother(X, _).
 female(X) :- aunt(X, _).
 
-% Symmetric sibling relationship
-sibling(X, Y) :- sibling(Y, X).
+% Symmetric sibling relationship - fixed version
+sibling(X, Y) :- sibling_base(X, Y).
+sibling(X, Y) :- sibling_base(Y, X).
 
-% You can uncomment additional inference rules if needed
-% child(X, Y) :- son(X, Y).
-% child(X, Y) :- daughter(X, Y).
-% parent(Y, X) :- child(X, Y).
+% Base sibling facts (this is what gets asserted)
+:- dynamic sibling_base/2.
+
+% Alternative: if you want to keep the current approach, make sure it works both ways
+% sibling(X, Y) :- brother(X, Y).
+% sibling(X, Y) :- sister(X, Y).
+% sibling(X, Y) :- brother(Y, X).
+% sibling(X, Y) :- sister(Y, X).

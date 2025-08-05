@@ -2,7 +2,7 @@ from pyswip import Prolog
 prolog = Prolog()
 
 statement_patterns = {
-    "and are siblings": "sibling({0}, {1})",
+    "and are siblings": "sibling_base({0}, {1})",  # Changed to use sibling_base
     "is a sister of": "sister({0}, {1})",
     "is a mother of": "mother({0}, {1})",
     "is a grandmother of": "grandmother({0}, {1})",
@@ -18,6 +18,40 @@ statement_patterns = {
     "is an aunt of": "aunt({0}, {1})",
 }
 
+# Fixed question patterns - removing duplicates and fixing incorrect patterns
+question_patterns = {
+    # Questions answerable by Yes or No
+    r"Are (\w+) and (\w+) siblings\?": "sibling({0}, {1})",
+    r"Is (\w+) a sister of (\w+)\?": "sister({0}, {1})",
+    r"Is (\w+) a brother of (\w+)\?": "brother({0}, {1})",
+    r"Is (\w+) the mother of (\w+)\?": "mother({0}, {1})",
+    r"Is (\w+) the father of (\w+)\?": "father({0}, {1})",
+    r"Is (\w+) a grandmother of (\w+)\?": "grandmother({0}, {1})", 
+    r"Is (\w+) a grandfather of (\w+)\?": "grandfather({0}, {1})",  # Fixed this line
+    r"Is (\w+) a daughter of (\w+)\?": "daughter({0}, {1})",
+    r"Is (\w+) a son of (\w+)\?": "son({0}, {1})",
+    r"Is (\w+) a child of (\w+)\?": "child({0}, {1})",
+    r"Is (\w+) an uncle of (\w+)\?": "uncle({0}, {1})",
+    r"Is (\w+) an aunt of (\w+)\?": "aunt({0}, {1})",
+    r"Are (\w+) and (\w+) relatives\?": "relative({0}, {1})",
+
+    # Questions that expect a list of name/s
+    r"Who are the siblings of (\w+)\?": "sibling({0}, X)",
+    r"Who are the sisters of (\w+)\?": "sister(X, {0})",
+    r"Who are the brothers of (\w+)\?": "brother(X, {0})",
+    r"Who is the mother of (\w+)\?": "mother(X, {0})",
+    r"Who is the father of (\w+)\?": "father(X, {0})",
+    r"Who are the parents of (\w+)\?": "parent(X, {0})",
+    r"Who are the daughters of (\w+)\?": "daughter(X, {0})",
+    r"Who are the sons of (\w+)\?": "son(X, {0})",
+    r"Who are the children of (\w+)\?": "child(X, {0})",  # Removed duplicates
+    r"Who are the uncles of (\w+)\?": "uncle(X, {0})",      # Added missing patterns
+    r"Who are the aunts of (\w+)\?": "aunt(X, {0})",
+    r"Who are the grandfathers of (\w+)\?": "grandfather(X, {0})",
+    r"Who are the grandmothers of (\w+)\?": "grandmother(X, {0})",
+    r"Who are the relatives of (\w+)\?": "relative(X, {0})",
+}
+
 import re
 
 def process_input(user_input):
@@ -27,7 +61,7 @@ def process_input(user_input):
             match = re.match(r"(\w+)\s+and\s+(\w+)\s+are\s+siblings\.", user_input)
             if match:
                 person1, person2 = match.groups()
-                fact = template.format(person1, person2)
+                fact = template.format(person1, person2) 
                 add_fact(fact)
                 return
         elif phrase == "is a sister of":
@@ -36,7 +70,7 @@ def process_input(user_input):
                 person1, person2 = match.groups()
                 fact = template.format(person1, person2)
                 add_fact(fact)
-                print("Pattern matched and fact added.")
+                # print("Pattern matched and fact added.")
                 return
         elif phrase == "is a mother of":
             match = re.match(r"(\w+)\s+is\s+a\s+mother\s+of\s+(\w+)\.", user_input)
@@ -126,7 +160,20 @@ def process_input(user_input):
                 return
     print("Unknown statement.")
 
-
+def process_question(user_input):
+    for pattern, query_template in question_patterns.items():
+        match = re.match(pattern, user_input)
+        if match:
+            groups = match.groups()
+            query = query_template.format(*groups)
+            
+            # Check if this is a "Who" question (returns multiple results)
+            if "Who are" in pattern:
+                answer_who_question(query, pattern, groups[0])
+            else:
+                answer_question(query)
+            return
+    print("Unknown question.")
 
 prolog.consult("FamilyRule.pl")
 
@@ -151,13 +198,11 @@ def is_consistent(fact):
             result = list(prolog.query(f"child({Y}, {X})"))
             if result:
                 return False
-        # You can add more checks for contradictions, like mutual sibling relationships or invalid genders
 
         return True
     except Exception as e:
         print(f"Consistency check failed: {e}")
-        return True  # Default to allowing the fact if the check can't be performed
-
+        return True
 
 def add_fact(fact):
     if is_consistent(fact):
@@ -179,6 +224,137 @@ def answer_question(query):
     except:
         print("Invalid query.")
 
+def answer_who_question(query, pattern, person):
+    try:
+        results = list(prolog.query(query))
+        if results:
+            # Extract the names from the results
+            names = [result['X'] for result in results]
+            
+            # Format the response based on the question type
+            if "siblings" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a sibling of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are siblings of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are siblings of {person}.")
+                    
+            elif "sisters" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a sister of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are sisters of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are sisters of {person}.")
+                    
+            elif "brothers" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a brother of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are brothers of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are brothers of {person}.")
+                    
+            elif "children" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a child of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are children of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are children of {person}.")
+                    
+            elif "parents" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a parent of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are parents of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are parents of {person}.")
+                    
+            elif "daughters" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a daughter of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are daughters of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are daughters of {person}.")
+                    
+            elif "sons" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a son of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are sons of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are sons of {person}.")
+                    
+            elif "uncles" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is an uncle of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are uncles of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are uncles of {person}.")
+                    
+            elif "aunts" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is an aunt of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are aunts of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are aunts of {person}.")
+                    
+            elif "grandfathers" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a grandfather of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are grandfathers of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are grandfathers of {person}.")
+                    
+            elif "grandmothers" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a grandmother of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are grandmothers of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are grandmothers of {person}.")
+                    
+            elif "relatives" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is a relative of {person}.")
+                elif len(names) == 2:
+                    print(f"{names[0]} and {names[1]} are relatives of {person}.")
+                else:
+                    name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
+                    print(f"{name_list} are relatives of {person}.")
+                    
+            elif "mother" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is the mother of {person}.")
+                else:
+                    print("No one found.")
+                    
+            elif "father" in pattern:
+                if len(names) == 1:
+                    print(f"{names[0]} is the father of {person}.")
+                else:
+                    print("No one found.")
+        else:
+            print("No one found.")
+    except Exception as e:
+        print(f"Query failed: {e}")
 
 while True:
     user_input = input("").strip()
@@ -187,10 +363,10 @@ while True:
         print("Goodbye!")
         break
     
-    if user_input.endswith("."):
+    if user_input.endswith("."): # stating a fact
         process_input(user_input)
-    elif user_input.endswith("?"):
-        print("Test 1")
+    elif user_input.endswith("?"): # asking a question
+        process_question(user_input)  # Fixed: Now properly processes questions
     else:
         print("I don't understand that.")
-    
+
