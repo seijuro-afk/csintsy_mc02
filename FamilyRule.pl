@@ -55,7 +55,7 @@ son(X, Y) :- child(X, Y), male(X).
 % Daughter is a female child
 daughter(X, Y) :- child(X, Y), female(X).
 
-% --- ENHANCED GENDER INFERENCE ---
+
 % Basic gender inference from direct base facts.
 % IMPORTANT: These rules must NOT be recursive or depend on predicates
 % that themselves require gender to be known (e.g., son, daughter, aunt, uncle).
@@ -109,7 +109,7 @@ relative(X, Y) :- relative_transitive(X, Y, [X]).
 
 % Helper predicate for transitive relative relationship with cycle prevention
 % relative_transitive(CurrentPerson, TargetPerson, VisitedList)
-% Base case: CurrentPerson is directly related to TargetPerson, and TargetPerson hasn't been visited yet.
+% Base case: CurrentPerson is directly related to TargetPerson, and TargetPerson hasnt been visited yet.
 relative_transitive(X, Y, Visited) :-
     relative_direct(X, Y),
     \+ member(Y, Visited). % Ensure Y has not been visited to prevent immediate loops
