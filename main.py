@@ -1,24 +1,25 @@
 from pyswip import Prolog
 prolog = Prolog()
 
+# Updated statement patterns to be consistent with Prolog rules
 statement_patterns = {
-    "and are siblings": "sibling_base({0}, {1})",  # Changed to use sibling_base
-    "is a sister of": "sister({0}, {1})",
-    "is a mother of": "mother({0}, {1})",
-    "is a grandmother of": "grandmother({0}, {1})",
-    "is a child of": "child({0}, {1})",
-    "is a daughter of": "daughter({0}, {1})",
-    "is a uncle of": "uncle({0}, {1})",
-    "is a brother of": "brother({0}, {1})",
-    "is a father of": "father({0}, {1})",
-    "and are the parents of": ["parent({0}, {2})", "parent({1}, {2})"],
-    "is a grandfather of": "grandfather({0}, {1})",
-    "and are the children of": ["child({0}, {3})", "child({1}, {3})", "child({2}, {3})"],
-    "is a son of": "son({0}, {1})",
-    "is an aunt of": "aunt({0}, {1})",
+    "and are siblings": "sibling_base({0}, {1})",  # Uses base fact
+    "is a sister of": "sister_base({0}, {1})",     # Uses base fact
+    "is the mother of": "mother_base({0}, {1})",   # Uses base fact - FIXED
+    "is a grandmother of": "grandmother({0}, {1})", # Direct assertion (no base needed)
+    "is a child of": "child({0}, {1})",            # Direct assertion
+    "is a daughter of": "daughter({0}, {1})",      # Direct assertion
+    "is an uncle of": "uncle({0}, {1})",            # Direct assertion
+    "is a brother of": "brother_base({0}, {1})",   # Uses base fact
+    "is the father of": "father_base({0}, {1})",   # Uses base fact - FIXED
+    "and are the parents of": ["parent({0}, {2})", "parent({1}, {2})"],  # Direct assertion
+    "is a grandfather of": "grandfather({0}, {1})", # Direct assertion
+    "and are the children of": ["child({0}, {3})", "child({1}, {3})", "child({2}, {3})"],  # Direct assertion
+    "is a son of": "son({0}, {1})",               # Direct assertion
+    "is an aunt of": "aunt({0}, {1})",            # Direct assertion
 }
 
-# Fixed question patterns - removing duplicates and fixing incorrect patterns
+# Fixed question patterns - CORRECTED queries to match proper relationships
 question_patterns = {
     # Questions answerable by Yes or No
     r"Are (\w+) and (\w+) siblings\?": "sibling({0}, {1})",
@@ -27,7 +28,7 @@ question_patterns = {
     r"Is (\w+) the mother of (\w+)\?": "mother({0}, {1})",
     r"Is (\w+) the father of (\w+)\?": "father({0}, {1})",
     r"Is (\w+) a grandmother of (\w+)\?": "grandmother({0}, {1})", 
-    r"Is (\w+) a grandfather of (\w+)\?": "grandfather({0}, {1})",  # Fixed this line
+    r"Is (\w+) a grandfather of (\w+)\?": "grandfather({0}, {1})",
     r"Is (\w+) a daughter of (\w+)\?": "daughter({0}, {1})",
     r"Is (\w+) a son of (\w+)\?": "son({0}, {1})",
     r"Is (\w+) a child of (\w+)\?": "child({0}, {1})",
@@ -35,21 +36,21 @@ question_patterns = {
     r"Is (\w+) an aunt of (\w+)\?": "aunt({0}, {1})",
     r"Are (\w+) and (\w+) relatives\?": "relative({0}, {1})",
 
-    # Questions that expect a list of name/s
-    r"Who are the siblings of (\w+)\?": "sibling({0}, X)",
-    r"Who are the sisters of (\w+)\?": "sister(X, {0})",
-    r"Who are the brothers of (\w+)\?": "brother(X, {0})",
-    r"Who is the mother of (\w+)\?": "mother(X, {0})",
-    r"Who is the father of (\w+)\?": "father(X, {0})",
-    r"Who are the parents of (\w+)\?": "parent(X, {0})",
-    r"Who are the daughters of (\w+)\?": "daughter(X, {0})",
-    r"Who are the sons of (\w+)\?": "son(X, {0})",
-    r"Who are the children of (\w+)\?": "child(X, {0})",  # Removed duplicates
-    r"Who are the uncles of (\w+)\?": "uncle(X, {0})",      # Added missing patterns
-    r"Who are the aunts of (\w+)\?": "aunt(X, {0})",
-    r"Who are the grandfathers of (\w+)\?": "grandfather(X, {0})",
-    r"Who are the grandmothers of (\w+)\?": "grandmother(X, {0})",
-    r"Who are the relatives of (\w+)\?": "relative(X, {0})",
+    # Questions that expect a list of name/s - CORRECTED QUERIES
+    r"Who are the siblings of (\w+)\?": "sibling(X, {0})",     # Find X where sibling(X, person)
+    r"Who are the sisters of (\w+)\?": "sister(X, {0})",      # Find X where sister(X, person)  
+    r"Who are the brothers of (\w+)\?": "brother(X, {0})",    # Find X where brother(X, person)
+    r"Who is the mother of (\w+)\?": "mother(X, {0})",        # Find X where mother(X, person)
+    r"Who is the father of (\w+)\?": "father(X, {0})",        # Find X where father(X, person)
+    r"Who are the parents of (\w+)\?": "parent(X, {0})",      # Find X where parent(X, person)
+    r"Who are the daughters of (\w+)\?": "daughter(X, {0})",  # FIXED: Find X where daughter(X, person) - X is daughter of person
+    r"Who are the sons of (\w+)\?": "son(X, {0})",           # FIXED: Find X where son(X, person) - X is son of person
+    r"Who are the children of (\w+)\?": "child(X, {0})",     # FIXED: Find X where child(X, person) - X is child of person
+    r"Who are the uncles of (\w+)\?": "uncle(X, {0})",       # Find X where uncle(X, person)
+    r"Who are the aunts of (\w+)\?": "aunt(X, {0})",         # Find X where aunt(X, person)
+    r"Who are the grandfathers of (\w+)\?": "grandfather(X, {0})",  # Find X where grandfather(X, person)
+    r"Who are the grandmothers of (\w+)\?": "grandmother(X, {0})",  # Find X where grandmother(X, person)
+    r"Who are the relatives of (\w+)\?": "relative(X, {0})",        # Find X where relative(X, person)
 }
 
 import re
@@ -70,10 +71,9 @@ def process_input(user_input):
                 person1, person2 = match.groups()
                 fact = template.format(person1, person2)
                 add_fact(fact)
-                # print("Pattern matched and fact added.")
                 return
-        elif phrase == "is a mother of":
-            match = re.match(r"(\w+)\s+is\s+a\s+mother\s+of\s+(\w+)\.", user_input)
+        elif phrase == "is the mother of":  # FIXED
+            match = re.match(r"(\w+)\s+is\s+the\s+mother\s+of\s+(\w+)\.", user_input)
             if match:
                 person1, person2 = match.groups()
                 fact = template.format(person1, person2)
@@ -100,8 +100,8 @@ def process_input(user_input):
                 fact = template.format(person1, person2)
                 add_fact(fact)
                 return
-        elif phrase == "is a uncle of":
-            match = re.match(r"(\w+)\s+is\s+a\s+uncle\s+of\s+(\w+)\.", user_input)
+        elif phrase == "is an uncle of":  # FIXED
+            match = re.match(r"(\w+)\s+is\s+an\s+uncle\s+of\s+(\w+)\.", user_input)
             if match:
                 person1, person2 = match.groups()
                 fact = template.format(person1, person2)
@@ -114,8 +114,8 @@ def process_input(user_input):
                 fact = template.format(person1, person2)
                 add_fact(fact)
                 return
-        elif phrase == "is a father of":
-            match = re.match(r"(\w+)\s+is\s+a\s+father\s+of\s+(\w+)\.", user_input)
+        elif phrase == "is the father of":  # FIXED
+            match = re.match(r"(\w+)\s+is\s+the\s+father\s+of\s+(\w+)\.", user_input)
             if match:
                 person1, person2 = match.groups()
                 fact = template.format(person1, person2)
