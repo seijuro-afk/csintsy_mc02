@@ -22,7 +22,7 @@ statement_patterns = {
     "is the father of": "father_base({0}, {1})", # Uses base fact
     "and are the parents of": ["parent({0}, {2})", "parent({1}, {2})"], # Direct assertion
     "is a grandfather of": "grandfather({0}, {1})", # Direct assertion
-    "and are the children of": ["child({0}, {3})", "child({1}, {3})", "child({2}, {3})"], # Direct assertion
+    ", and are the children of": ["child({0}, {2})", "child({1}, {2})"], # Direct assertion
     "is a son of": "son({0}, {1})", # Direct assertion
     "is an aunt of": "aunt({0}, {1})", # Direct assertion
 }
@@ -64,115 +64,44 @@ question_patterns = {
 
 # Function to process user statements (adding facts to Prolog)
 def process_input(user_input):
-    # First try the complex patterns with multiple people
-    for phrase, template in statement_patterns.items():
-        # Handle multi-person statements first (they have special patterns)
-        if isinstance(template, list):
-            if phrase == "and are the parents of" and len(template) == 2:
-                match = re.match(r"(\w+)\s+and\s+(\w+)\s+are\s+the\s+parents\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2, child = match.groups()
-                    facts = [template[0].format(person1, child), template[1].format(person2, child)]
-                    for fact in facts:
-                        add_fact(fact)
-                    return
-            elif phrase == "and are the children of" and len(template) == 3:
-                match = re.match(r"(\w+)\s+and\s+(\w+)\s+and\s+(\w+)\s+are\s+the\s+children\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2, person3, parent = match.groups()
-                    facts = [template[0].format(person1, parent), template[1].format(person2, parent), template[2].format(person3, parent)]
-                    for fact in facts:
-                        add_fact(fact)
-                    return
-            elif phrase == "and are siblings" and not isinstance(template, list):
-                match = re.match(r"(\w+)\s+and\s+(\w+)\s+are\s+siblings\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
+    matched = False
+    # Define regex patterns and their corresponding templates directly
+    patterns_to_check = [
+        (r"(\w+)\s+and\s+(\w+)\s+are\s+the\s+parents\s+of\s+(\w+)\.", ["parent({0}, {2})", "parent({1}, {2})"]),
+        (r"(\w+)\s+and\s+(\w+)\s+are\s+children\s+of\s+(\w+)\.", ["child({0}, {2})", "child({1}, {2})"]),
+        (r"(\w+)\s+and\s+(\w+)\s+are\s+siblings\.", "sibling_base({0}, {1})"),
+        (r"(\w+)\s+is\s+an?\s+sister\s+of\s+(\w+)\.", "sister_base({0}, {1})"),
+        (r"(\w+)\s+is\s+the\s+mother\s+of\s+(\w+)\.", "mother_base({0}, {1})"),
+        (r"(\w+)\s+is\s+a\s+grandmother\s+of\s+(\w+)\.", "grandmother({0}, {1})"),
+        (r"(\w+)\s+is\s+a\s+child\s+of\s+(\w+)\.", "child({0}, {1})"),
+        (r"(\w+)\s+is\s+a\s+daughter\s+of\s+(\w+)\.", "daughter({0}, {1})"),
+        (r"(\w+)\s+is\s+an\s+uncle\s+of\s+(\w+)\.", "uncle({0}, {1})"),
+        (r"(\w+)\s+is\s+a\s+brother\s+of\s+(\w+)\.", "brother_base({0}, {1})"),
+        (r"(\w+)\s+is\s+the\s+father\s+of\s+(\w+)\.", "father_base({0}, {1})"),
+        (r"(\w+)\s+is\s+a\s+grandfather\s+of\s+(\w+)\.", "grandfather({0}, {1})"),
+        (r"(\w+)\s+is\s+a\s+son\s+of\s+(\w+)\.", "son({0}, {1})"),
+        (r"(\w+)\s+is\s+an\s+aunt\s+of\s+(\w+)\.", "aunt({0}, {1})"),
+    ]
+
+    for regex_pattern, template in patterns_to_check:
+        match = re.match(regex_pattern, user_input)
+        if match:
+            groups = match.groups()
+            # Convert all extracted names to lowercase for consistency with Prolog atoms
+            groups_lc = tuple(g.lower() for g in groups)
+
+            if isinstance(template, list):
+                facts = [t.format(*groups_lc) for t in template]
+                for fact in facts:
                     add_fact(fact)
-                    return
-        # Then handle single-fact patterns with explicit regex patterns
-        else:
-            if phrase == "is a sister of":
-                match = re.match(r"(\w+)\s+is\s+an?\s+sister\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is the mother of":
-                match = re.match(r"(\w+)\s+is\s+the\s+mother\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is a grandmother of":
-                match = re.match(r"(\w+)\s+is\s+a\s+grandmother\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is a child of":
-                match = re.match(r"(\w+)\s+is\s+a\s+child\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is a daughter of":
-                match = re.match(r"(\w+)\s+is\s+a\s+daughter\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is an uncle of":
-                match = re.match(r"(\w+)\s+is\s+an\s+uncle\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is a brother of":
-                match = re.match(r"(\w+)\s+is\s+a\s+brother\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is the father of":
-                match = re.match(r"(\w+)\s+is\s+the\s+father\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is a grandfather of":
-                match = re.match(r"(\w+)\s+is\s+a\s+grandfather\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is a son of":
-                match = re.match(r"(\w+)\s+is\s+a\s+son\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-            elif phrase == "is an aunt of":
-                match = re.match(r"(\w+)\s+is\s+an\s+aunt\s+of\s+(\w+)\.", user_input)
-                if match:
-                    person1, person2 = match.groups()
-                    fact = template.format(person1, person2)
-                    add_fact(fact)
-                    return
-                    
-    # If we get here, no pattern matched
-    print("Unknown statement.")
+            else:
+                fact = template.format(*groups_lc)
+                add_fact(fact)
+            matched = True
+            break # Exit loop after matching
+
+    if not matched:
+        print("Unknown statement.")
 
 # Function to process user questions (querying Prolog)
 def process_question(user_input):
@@ -180,11 +109,14 @@ def process_question(user_input):
         match = re.match(pattern, user_input)
         if match:
             groups = match.groups()
-            query = query_template.format(*groups)
+            # Convert all extracted names to lowercase for consistency with Prolog atoms
+            groups_lc = tuple(g.lower() for g in groups)
+            query = query_template.format(*groups_lc) # Use lowercased groups here
 
             # Check if this is a "Who" question (returns multiple results)
             if "Who are" in pattern or "Who is" in pattern:
-                answer_who_question(query, pattern, groups[-1] if groups else None) # Pass the last group as the reference person
+                # Pass the lowercased reference person
+                answer_who_question(query, pattern, groups_lc[-1] if groups_lc else None)
             else:
                 answer_question(query)
             return
@@ -198,6 +130,11 @@ def is_consistent(fact):
         args = fact.split('(')[1].rstrip(')').split(', ')
         X = args[0]
         Y = args[1] if len(args) > 1 else None # Y might not exist for gender facts
+
+        # NEW CHECK: Prevent reflexive relationships (X cannot be related to X)
+        if Y and X == Y:
+            print(f"Consistency check failed: A person cannot be in a relationship with themselves ({X} and {Y} are the same).")
+            return False
 
         # --- GENERATIONAL CONSISTENCY CHECKS ---
         # Prevent circular parent-child relationships (e.g., A is child of B, B is child of A)
