@@ -1,15 +1,11 @@
 from pyswip import Prolog
 import re
 
-# Initialize Prolog engine
+
 prolog = Prolog()
 
-# Consult the Prolog file containing family rules
-# Ensure 'FamilyRule.pl' is in the same directory or accessible path
 prolog.consult("FamilyRule.pl")
 
-# Updated statement patterns to be consistent with Prolog rules
-# These patterns are used to parse user input and form Prolog facts
 statement_patterns = {
     "and are siblings": "sibling_base({0}, {1})", # Uses base fact
     "is a sister of": "sister_base({0}, {1})",  # Uses base fact
@@ -45,7 +41,7 @@ question_patterns = {
     r"Is (\w+) an aunt of (\w+)\?": "aunt({0}, {1})",
     r"Are (\w+) and (\w+) relatives\?": "relative({0}, {1})",
 
-    # Questions that expect a list of name/s - CORRECTED QUERIES
+    # Questions that returns a list of names
     r"Who are the siblings of (\w+)\?": "sibling(X, {0})", # Find X where sibling(X, person)
     r"Who are the sisters of (\w+)\?": "sister(X, {0})", # Find X where sister(X, person)
     r"Who are the brothers of (\w+)\?": "brother(X, {0})", # Find X where brother(X, person)
@@ -87,23 +83,33 @@ def process_input(user_input):
         match = re.match(regex_pattern, user_input)
         if match:
             groups = match.groups()
-            # Convert all extracted names to lowercase for consistency with Prolog atoms
+            # Convert all extracted names to lowercase for consistency with Prolog 
             groups_lc = tuple(g.lower() for g in groups)
 
+            success = True  
             if isinstance(template, list):
                 facts = [t.format(*groups_lc) for t in template]
                 for fact in facts:
-                    add_fact(fact)
+                    if not add_fact(fact):
+                        success = False
+                        break
             else:
                 fact = template.format(*groups_lc)
-                add_fact(fact)
+                success = add_fact(fact)
+                
+            # Print a single success message if all facts were added
+            if success:
+                print("OK! I learned something.")
+            else:
+                print("That's impossible! (Consistency check failed)")
+                
             matched = True
             break # Exit loop after matching
 
     if not matched:
         print("Unknown statement.")
 
-# Function to process user questions (querying Prolog)
+# Function to process user questions
 def process_question(user_input):
     for pattern, query_template in question_patterns.items():
         match = re.match(pattern, user_input)
@@ -131,13 +137,13 @@ def is_consistent(fact):
         X = args[0]
         Y = args[1] if len(args) > 1 else None # Y might not exist for gender facts
 
-        # NEW CHECK: Prevent reflexive relationships (X cannot be related to X)
+        # Reflexive relationships check (X cannot be related to X)
         if Y and X == Y:
             print(f"Consistency check failed: A person cannot be in a relationship with themselves ({X} and {Y} are the same).")
             return False
 
-        # --- GENERATIONAL CONSISTENCY CHECKS ---
-        # Prevent circular parent-child relationships (e.g., A is child of B, B is child of A)
+      
+        # Parent-Child check (X is a child of B, X cannot be a child of A)
         if predicate in ["parent", "father_base", "mother_base"]:
             if Y and list(prolog.query(f"child({Y}, {X})")):
                 print(f"Consistency check failed: {Y} cannot be a child of {X} if {X} is already a child of {Y}.")
@@ -147,13 +153,13 @@ def is_consistent(fact):
                 print(f"Consistency check failed: {Y} cannot be a child of {X} if {X} is already a child of {Y}.")
                 return False
 
-        # NEW CHECK: If X is already a child of Y, X cannot be a parent of Y
+        # Child as Parent to own Parents check
         if predicate in ["father_base", "mother_base", "parent"]:
             if Y and list(prolog.query(f"child({X}, {Y})")):
                 print(f"Consistency check failed: {X} cannot be a parent of {Y} if {X} is already a child of {Y} (circular relationship).")
                 return False
 
-        # Prevent grandparent contradictions
+        # Grandparent contradictions check
         if predicate in ["father_base", "mother_base"]:
             if Y and list(prolog.query(f"grandchild({X}, {Y})")):
                 print(f"Consistency check failed: {X} cannot be parent of {Y} if {X} is already {Y}'s grandchild.")
@@ -162,9 +168,9 @@ def is_consistent(fact):
                 print(f"Consistency check failed: {X} cannot be parent of {Y} if {Y} is already {X}'s grandparent.")
                 return False
 
-        # --- COMPREHENSIVE GENDER CONSISTENCY CHECKS ---
+   
         
-        # 1. FIRST CHECK: If asserting a male role, check if person is already female
+        # Gender check for male
         male_roles = ["father_base", "brother_base", "son", "grandfather", "uncle"]
         female_roles = ["mother_base", "sister_base", "daughter", "grandmother", "aunt"]
         
@@ -181,7 +187,7 @@ def is_consistent(fact):
                 print(f"Gender consistency failed: {X} cannot be a {predicate} because {X} is female.")
                 return False
                 
-        # 2. SECOND CHECK: If asserting a female role, check if person is already male
+        # Gender check for female
         elif predicate in female_roles:
             # Check if X is already in ANY male role
             for male_role in male_roles:
@@ -195,7 +201,7 @@ def is_consistent(fact):
                 print(f"Gender consistency failed: {X} cannot be a {predicate} because {X} is male.")
                 return False
 
-        # 3. SPECIFIC CHECKS FOR daughter/son CASES
+        # A parent cannot be a child as an opposite sex (Example a father cannot be a daughter )
         if predicate == "daughter":
             # Check if X is already a father (most direct contradiction to your example)
             if list(prolog.query(f"father({X}, _)")):
@@ -215,7 +221,7 @@ def is_consistent(fact):
                 print(f"Gender consistency failed: {X} cannot be a son and have a female role.")
                 return False
 
-        # --- UNIQUE PARENT CONSISTENCY CHECKS ---
+        # A child can only have one father or mother in the base facts
         if predicate == "father_base":
             existing_fathers = list(prolog.query(f"father_base(F, {Y})"))
             if existing_fathers and existing_fathers[0]['F'] != X:
@@ -232,18 +238,19 @@ def is_consistent(fact):
         print(f"An error occurred during consistency check: {e}")
         return False # Default to False if an error occurs during check
 
-# Function to add a fact to Prolog after consistency check
+# add fact to Prolog after consistency check
 def add_fact(fact):
     if is_consistent(fact):
         try:
             prolog.assertz(fact)
-            print("OK! I learned something.")
+            return True  # Success
         except Exception as e:
             print(f"That's impossible! Error asserting fact: {e}")
+            return False
     else:
-        print("That's impossible! (Consistency check failed)")
+        return False  # Consistency check failed
 
-# Function to answer Yes/No questions
+# answer yes or no questions
 def answer_question(query):
     try:
         result = list(prolog.query(query))
@@ -254,14 +261,14 @@ def answer_question(query):
     except Exception as e:
         print(f"Invalid query: {e}")
 
-# Function to answer "Who" questions (listing results)
+# returns a list of names for "Who" questions
 def answer_who_question(query, pattern, person):
     try:
         results = list(prolog.query(query))
         if results:
             names = [result['X'] for result in results]
             
-            # Format the response based on relationship and count
+            
             relationship_info = {
                 "siblings": {"singular": "a sibling", "plural": "siblings"},
                 "sisters": {"singular": "a sister", "plural": "sisters"},
@@ -295,14 +302,14 @@ def answer_who_question(query, pattern, person):
                     name_list = ", ".join(names[:-1]) + f", and {names[-1]}"
                     print(f"{name_list} are {relationship_info[rel_type]['plural']} of {person}.")
             else:
-                # Fallback in case pattern doesn't match any known relationship
+                
                 print(f"Found: {', '.join(names)}")
         else:
             print("No one found.")
     except Exception as e:
         print(f"Query failed: {e}")
 
-# Main interaction loop
+# Main 
 print("Initializing Chatbot...")
 while True:
     user_input = input("").strip()
